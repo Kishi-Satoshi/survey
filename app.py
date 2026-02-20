@@ -17,6 +17,10 @@ TOKEN_FILE = os.path.join(DATA_DIR, "admin_token.txt")
 
 
 def get_or_create_admin_token():
+    # Prefer environment variable so token survives Vercel cold starts
+    env_token = os.environ.get("ADMIN_TOKEN")
+    if env_token:
+        return env_token.strip()
     os.makedirs(DATA_DIR, exist_ok=True)
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, "r") as f:
