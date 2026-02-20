@@ -7,46 +7,39 @@ Otherwise falls back to local CSV storage.
 import csv
 import io
 import os
+from urllib.parse import urlparse
 
 try:
-    import psycopg2
-    import psycopg2.extras
+    import pg8000.native
 except ImportError:
-    psycopg2 = None
+    pg8000 = None
 
 FIELDNAMES = ["受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "役職", "セミナー感想"]
 
-# Column mapping: Japanese display name -> DB column name
-_DB_COLUMNS = {
-    "受付日時": "submitted_at",
-    "氏名": "name",
-    "電話番号": "phone",
-    "メールアドレス": "email",
-    "会社名": "company",
-    "役職": "position",
-    "セミナー感想": "comment",
-}
-_DB_TO_JP = {v: k for k, v in _DB_COLUMNS.items()}
+_DB_COLS = ["submitted_at", "name", "phone", "email", "company", "position", "comment"]
+_JP_TO_DB = dict(zip(FIELDNAMES, _DB_COLS))
+_DB_TO_JP = dict(zip(_DB_COLS, FIELDNAMES))
 
 
 def _get_url():
-    return (
-        os.environ.get("POSTGRES_URL")
-        or os.environ.get("DATABASE_URL")
-        or ""
-    )
+    return os.environ.get("POSTGRES_URL") or os.environ.get("DATABASE_URL") or ""
 
 
 def _get_conn():
-    if psycopg2 is None:
+    if pg8000 is None:
         return None
     url = _get_url()
     if not url:
         return None
-    # Vercel Postgres URLs may start with postgres:// — psycopg2 needs postgresql://
-    if url.startswith("postgres://"):
-        url = "postgresql://" + url[len("postgres://"):]
-    return psycopg2.connect(url)
+    p = urlparse(url)
+    return pg8000.native.Connection(
+        user=p.username,
+        password=p.password,
+        host=p.hostname,
+        port=p.port or 5432,
+        database=p.path.lstrip("/"),
+        ssl_context=True,
+    )
 
 
 def init_db():
@@ -57,19 +50,18 @@ def init_db():
     if conn is None:
         return False
     try:
-        with conn, conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS responses (
-                    id SERIAL PRIMARY KEY,
-                    submitted_at TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    phone TEXT NOT NULL,
-                    email TEXT NOT NULL,
-                    company TEXT NOT NULL,
-                    position TEXT NOT NULL,
-                    comment TEXT NOT NULL DEFAULT ''
-                )
-            """)
+        conn.run("""
+            CREATE TABLE IF NOT EXISTS responses (
+                id SERIAL PRIMARY KEY,
+                submitted_at TEXT NOT NULL,
+                name TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                email TEXT NOT NULL,
+                company TEXT NOT NULL,
+                position TEXT NOT NULL,
+                comment TEXT NOT NULL DEFAULT ''
+            )
+        """)
         return True
     except Exception:
         return False
@@ -79,17 +71,19 @@ def init_db():
 
 def save_response(data: dict):
     """Save a survey response. data keys are Japanese field names."""
-    conn = _get_conn()
+    try:
+        conn = _get_conn()
+    except Exception:
+        return False
     if conn is None:
         return False
     try:
-        row = {_DB_COLUMNS[k]: v for k, v in data.items()}
-        with conn, conn.cursor() as cur:
-            cur.execute(
-                """INSERT INTO responses (submitted_at, name, phone, email, company, position, comment)
-                   VALUES (%(submitted_at)s, %(name)s, %(phone)s, %(email)s, %(company)s, %(position)s, %(comment)s)""",
-                row,
-            )
+        row = {_JP_TO_DB[k]: v for k, v in data.items()}
+        conn.run(
+            "INSERT INTO responses (submitted_at, name, phone, email, company, position, comment)"
+            " VALUES (:submitted_at, :name, :phone, :email, :company, :position, :comment)",
+            **row,
+        )
         return True
     except Exception:
         return False
@@ -99,18 +93,21 @@ def save_response(data: dict):
 
 def load_responses():
     """Load all responses. Returns list of dicts with Japanese keys, or None on failure."""
-    conn = _get_conn()
+    try:
+        conn = _get_conn()
+    except Exception:
+        return None
     if conn is None:
         return None
     try:
-        with conn, conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-            cur.execute(
-                "SELECT submitted_at, name, phone, email, company, position, comment FROM responses ORDER BY id"
-            )
-            rows = []
-            for r in cur.fetchall():
-                rows.append({_DB_TO_JP[col]: r[col] for col in _DB_COLUMNS.values()})
-            return rows
+        result = conn.run(
+            "SELECT submitted_at, name, phone, email, company, position, comment"
+            " FROM responses ORDER BY id"
+        )
+        rows = []
+        for r in result:
+            rows.append({_DB_TO_JP[col]: val for col, val in zip(_DB_COLS, r)})
+        return rows
     except Exception:
         return None
     finally:
