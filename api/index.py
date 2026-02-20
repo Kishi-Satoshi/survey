@@ -1,13 +1,18 @@
 import csv
 import os
+import tempfile
 from datetime import datetime
 
 from flask import Flask, redirect, render_template, request, url_for
 
-app = Flask(__name__)
-
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+# Vercel serverless: use /tmp for writable storage
+DATA_DIR = os.path.join(tempfile.gettempdir(), "survey_data")
 CSV_FILE = os.path.join(DATA_DIR, "responses.csv")
+
+# Templates are one level up from api/
+TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
+
+app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
 FIELDNAMES = ["受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "役職", "セミナー感想"]
 REQUIRED_FIELDS = ["name", "phone", "email", "company", "position"]
@@ -79,7 +84,3 @@ def admin():
         reader = csv.DictReader(f)
         rows = list(reader)
     return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES)
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
