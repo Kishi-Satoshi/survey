@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>セミナーアンケート</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body { background-color: #f8f9fa; }
+    .form-card {
+      max-width: 640px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+      padding: 2rem;
+    }
+    .required-mark { color: #dc3545; margin-left: 2px; }
+  </style>
+</head>
+<body>
+  <div class="form-card">
+    <h1 class="h4 mb-1">セミナーアンケート</h1>
+    <p class="text-muted small mb-4">本日はご参加いただきありがとうございました。下記のアンケートにご協力ください。</p>
+
+    <form method="post" action="/submit" novalidate>
+
+      <!-- 氏名 -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="name">
+          氏名<span class="required-mark">*</span>
+        </label>
+        <input
+          type="text"
+          class="form-control {% if errors.name %}is-invalid{% endif %}"
+          id="name"
+          name="name"
+          value="{{ values.name or '' }}"
+          placeholder="山田 太郎"
+        >
+        {% if errors.name %}
+        <div class="invalid-feedback">{{ errors.name }}</div>
+        {% endif %}
+      </div>
+
+      <!-- 電話番号 -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="phone">
+          電話番号<span class="required-mark">*</span>
+        </label>
+        <input
+          type="tel"
+          class="form-control {% if errors.phone %}is-invalid{% endif %}"
+          id="phone"
+          name="phone"
+          value="{{ values.phone or '' }}"
+          placeholder="090-1234-5678"
+        >
+        {% if errors.phone %}
+        <div class="invalid-feedback">{{ errors.phone }}</div>
+        {% endif %}
+      </div>
+
+      <!-- メールアドレス -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="email">
+          メールアドレス<span class="required-mark">*</span>
+        </label>
+        <input
+          type="email"
+          class="form-control {% if errors.email %}is-invalid{% endif %}"
+          id="email"
+          name="email"
+          value="{{ values.email or '' }}"
+          placeholder="example@company.com"
+        >
+        {% if errors.email %}
+        <div class="invalid-feedback">{{ errors.email }}</div>
+        {% endif %}
+      </div>
+
+      <!-- 会社名 -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="company">
+          会社名<span class="required-mark">*</span>
+        </label>
+        <input
+          type="text"
+          class="form-control {% if errors.company %}is-invalid{% endif %}"
+          id="company"
+          name="company"
+          value="{{ values.company or '' }}"
+          placeholder="株式会社〇〇"
+        >
+        {% if errors.company %}
+        <div class="invalid-feedback">{{ errors.company }}</div>
+        {% endif %}
+      </div>
+
+      <!-- 役職 -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="position">
+          役職<span class="required-mark">*</span>
+        </label>
+        <input
+          type="text"
+          class="form-control {% if errors.position %}is-invalid{% endif %}"
+          id="position"
+          name="position"
+          value="{{ values.position or '' }}"
+          placeholder="営業部長"
+        >
+        {% if errors.position %}
+        <div class="invalid-feedback">{{ errors.position }}</div>
+        {% endif %}
+      </div>
+
+      <!-- セミナー感想 -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold" for="comment">
+          本日のセミナーで良かった点・もしくは不満な点をご記入ください。
+        </label>
+        <textarea
+          class="form-control"
+          id="comment"
+          name="comment"
+          rows="5"
+          placeholder="ご自由にご記入ください。"
+        >{{ values.comment or '' }}</textarea>
+      </div>
+
+      <p class="text-muted small mb-3"><span class="required-mark">*</span> は必須項目です。</p>
+
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary btn-lg">送信する</button>
+      </div>
+
+    </form>
+  </div>
+</body>
+</html>
