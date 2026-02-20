@@ -1,21 +1,25 @@
 import csv
+import io
 import os
 import secrets
 from datetime import datetime
 
-import io
-
 from flask import Flask, Response, abort, redirect, render_template, request, url_for
+
+import db
 
 app = Flask(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 CSV_FILE = os.path.join(DATA_DIR, "responses.csv")
 
-FIELDNAMES = ["受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "役職", "セミナー感想"]
+FIELDNAMES = db.FIELDNAMES
 REQUIRED_FIELDS = ["name", "phone", "email", "company", "position"]
 
 TOKEN_FILE = os.path.join(DATA_DIR, "admin_token.txt")
+
+# Try to initialise Postgres on startup; remember whether it's available
+_use_pg = db.init_db()
 
 
 def get_or_create_admin_token():
@@ -33,6 +37,8 @@ def get_or_create_admin_token():
     return token
 
 
+# --- CSV fallback helpers (used only when POSTGRES_URL is not set) ---
+
 def ensure_csv():
     os.makedirs(DATA_DIR, exist_ok=True)
     if not os.path.exists(CSV_FILE):
@@ -41,12 +47,20 @@ def ensure_csv():
             writer.writeheader()
 
 
-def save_response(data: dict):
+def save_response_csv(data: dict):
     ensure_csv()
     with open(CSV_FILE, "a", newline="", encoding="utf-8-sig") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
         writer.writerow(data)
 
+
+def load_responses_csv():
+    ensure_csv()
+    with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
+        return list(csv.DictReader(f))
+
+
+# --- Routes ---
 
 @app.route("/")
 def index():
@@ -81,7 +95,11 @@ def submit():
         "役職": values["position"],
         "セミナー感想": values["comment"],
     }
-    save_response(row)
+
+    if _use_pg:
+        db.save_response(row)
+    else:
+        save_response_csv(row)
 
     return redirect(url_for("thanks"))
 
@@ -92,11 +110,10 @@ def thanks():
 
 
 def render_admin(share_url):
-    ensure_csv()
-    rows = []
-    with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
+    if _use_pg:
+        rows = db.load_responses() or []
+    else:
+        rows = load_responses_csv()
     csv_url = share_url.rstrip("/") + "/csv" if share_url else None
     return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url, csv_url=csv_url)
 
@@ -122,16 +139,22 @@ def admin(token):
 def admin_csv(token):
     if token != get_or_create_admin_token():
         return abort(403)
-    ensure_csv()
-    buf = io.StringIO()
-    buf.write("\ufeff")  # BOM for Excel
-    writer = csv.DictWriter(buf, fieldnames=FIELDNAMES)
-    writer.writeheader()
-    with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
-        for row in csv.DictReader(f):
-            writer.writerow(row)
+
+    if _use_pg:
+        csv_data = db.responses_to_csv_string() or ""
+    else:
+        ensure_csv()
+        buf = io.StringIO()
+        buf.write("\ufeff")  # BOM for Excel
+        writer = csv.DictWriter(buf, fieldnames=FIELDNAMES)
+        writer.writeheader()
+        with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
+            for row in csv.DictReader(f):
+                writer.writerow(row)
+        csv_data = buf.getvalue()
+
     return Response(
-        buf.getvalue(),
+        csv_data,
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=responses.csv"},
     )
@@ -142,5 +165,9 @@ if __name__ == "__main__":
     print(f"\n{'=' * 50}")
     print(f"  管理画面の共有リンク:")
     print(f"  http://localhost:5000/admin/{token}")
+    if _use_pg:
+        print(f"  ストレージ: PostgreSQL")
+    else:
+        print(f"  ストレージ: CSV (ローカル)")
     print(f"{'=' * 50}\n")
     app.run(host="0.0.0.0", port=5000, debug=True)
