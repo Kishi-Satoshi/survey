@@ -89,22 +89,30 @@ def thanks():
     return render_template("thanks.html")
 
 
-@app.route("/admin")
-def admin_no_token():
-    return abort(403)
+def render_admin(share_url):
+    ensure_csv()
+    rows = []
+    with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url)
+
+
+@app.route("/admin", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        token = request.form.get("token", "").strip()
+        if token == get_or_create_admin_token():
+            return render_admin(request.host_url.rstrip("/") + "/admin/" + token)
+        return render_template("login.html", error="トークンが正しくありません。"), 403
+    return render_template("login.html", error=None)
 
 
 @app.route("/admin/<token>")
 def admin(token):
     if token != get_or_create_admin_token():
         return abort(403)
-    ensure_csv()
-    rows = []
-    with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
-    share_url = request.url
-    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url)
+    return render_admin(request.url)
 
 
 if __name__ == "__main__":

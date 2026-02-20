@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理者ログイン | セミナーアンケート</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <style>
+    body { background-color: #f8f9fa; }
+    .login-card {
+      max-width: 420px;
+      margin: 80px auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+      padding: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1 class="h4 mb-4">管理者ログイン</h1>
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/admin">
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="token">管理者トークン</label>
+        <input type="password" class="form-control" id="token" name="token" placeholder="トークンを入力してください" required>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary">ログイン</button>
+      </div>
+    </form>
+    <a href="/" class="btn btn-outline-secondary btn-sm mt-3">フォームへ戻る</a>
+  </div>
+</body>
+</html>
