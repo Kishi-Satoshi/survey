@@ -1,6 +1,6 @@
 """Persistent storage using PostgreSQL.
 
-When POSTGRES_URL is set, data is stored in PostgreSQL (Vercel Postgres / Neon).
+When POSTGRES_URL (or DATABASE_URL) is set, data is stored in PostgreSQL.
 Otherwise falls back to local CSV storage.
 """
 
@@ -8,8 +8,11 @@ import csv
 import io
 import os
 
-import psycopg2
-import psycopg2.extras
+try:
+    import psycopg2
+    import psycopg2.extras
+except ImportError:
+    psycopg2 = None
 
 FIELDNAMES = ["受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "役職", "セミナー感想"]
 
@@ -26,15 +29,31 @@ _DB_COLUMNS = {
 _DB_TO_JP = {v: k for k, v in _DB_COLUMNS.items()}
 
 
+def _get_url():
+    return (
+        os.environ.get("POSTGRES_URL")
+        or os.environ.get("DATABASE_URL")
+        or ""
+    )
+
+
 def _get_conn():
-    url = os.environ.get("POSTGRES_URL", "")
+    if psycopg2 is None:
+        return None
+    url = _get_url()
     if not url:
         return None
-    return psycopg2.connect(url, sslmode="require")
+    # Vercel Postgres URLs may start with postgres:// — psycopg2 needs postgresql://
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+    return psycopg2.connect(url)
 
 
 def init_db():
-    conn = _get_conn()
+    try:
+        conn = _get_conn()
+    except Exception:
+        return False
     if conn is None:
         return False
     try:
@@ -52,6 +71,8 @@ def init_db():
                 )
             """)
         return True
+    except Exception:
+        return False
     finally:
         conn.close()
 
@@ -70,12 +91,14 @@ def save_response(data: dict):
                 row,
             )
         return True
+    except Exception:
+        return False
     finally:
         conn.close()
 
 
 def load_responses():
-    """Load all responses. Returns list of dicts with Japanese keys."""
+    """Load all responses. Returns list of dicts with Japanese keys, or None on failure."""
     conn = _get_conn()
     if conn is None:
         return None
@@ -88,6 +111,8 @@ def load_responses():
             for r in cur.fetchall():
                 rows.append({_DB_TO_JP[col]: r[col] for col in _DB_COLUMNS.values()})
             return rows
+    except Exception:
+        return None
     finally:
         conn.close()
 
