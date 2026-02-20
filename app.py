@@ -3,7 +3,9 @@ import os
 import secrets
 from datetime import datetime
 
-from flask import Flask, abort, redirect, render_template, request, url_for
+import io
+
+from flask import Flask, Response, abort, redirect, render_template, request, url_for
 
 app = Flask(__name__)
 
@@ -95,7 +97,8 @@ def render_admin(share_url):
     with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
-    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url)
+    csv_url = share_url.rstrip("/") + "/csv" if share_url else None
+    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url, csv_url=csv_url)
 
 
 @app.route("/admin", methods=["GET", "POST"])
@@ -113,6 +116,25 @@ def admin(token):
     if token != get_or_create_admin_token():
         return abort(403)
     return render_admin(request.url)
+
+
+@app.route("/admin/<token>/csv")
+def admin_csv(token):
+    if token != get_or_create_admin_token():
+        return abort(403)
+    ensure_csv()
+    buf = io.StringIO()
+    buf.write("\ufeff")  # BOM for Excel
+    writer = csv.DictWriter(buf, fieldnames=FIELDNAMES)
+    writer.writeheader()
+    with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
+        for row in csv.DictReader(f):
+            writer.writerow(row)
+    return Response(
+        buf.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=responses.csv"},
+    )
 
 
 if __name__ == "__main__":

@@ -17,6 +17,9 @@
       <h1 class="h4 mb-0">回答一覧</h1>
       <div class="d-flex align-items-center gap-2">
         <span class="badge bg-secondary">{{ rows|length }} 件</span>
+        {% if csv_url %}
+        <a href="{{ csv_url }}" class="btn btn-outline-success btn-sm">CSV出力</a>
+        {% endif %}
         {% if share_url %}
         <button class="btn btn-outline-primary btn-sm" onclick="copyShareLink()" id="copyBtn">
           共有リンクをコピー
