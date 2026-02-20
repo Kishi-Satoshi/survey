@@ -15,7 +15,14 @@
   <div class="container">
     <div class="d-flex align-items-center justify-content-between mb-3">
       <h1 class="h4 mb-0">回答一覧</h1>
-      <span class="badge bg-secondary">{{ rows|length }} 件</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-secondary">{{ rows|length }} 件</span>
+        {% if share_url %}
+        <button class="btn btn-outline-primary btn-sm" onclick="copyShareLink()" id="copyBtn">
+          共有リンクをコピー
+        </button>
+        {% endif %}
+      </div>
     </div>
 
     {% if rows %}
@@ -45,5 +52,20 @@
 
     <a href="/" class="btn btn-outline-secondary btn-sm">フォームへ戻る</a>
   </div>
+  {% if share_url %}
+  <script>
+    function copyShareLink() {
+      navigator.clipboard.writeText("{{ share_url }}").then(function() {
+        var btn = document.getElementById("copyBtn");
+        btn.textContent = "コピーしました!";
+        btn.classList.replace("btn-outline-primary", "btn-success");
+        setTimeout(function() {
+          btn.textContent = "共有リンクをコピー";
+          btn.classList.replace("btn-success", "btn-outline-primary");
+        }, 2000);
+      });
+    }
+  </script>
+  {% endif %}
 </body>
 </html>

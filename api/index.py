@@ -1,9 +1,10 @@
 import csv
 import os
+import secrets
 import tempfile
 from datetime import datetime
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, abort, redirect, render_template, request, url_for
 
 # Vercel serverless: use /tmp for writable storage
 DATA_DIR = os.path.join(tempfile.gettempdir(), "survey_data")
@@ -16,6 +17,19 @@ app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
 FIELDNAMES = ["受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "役職", "セミナー感想"]
 REQUIRED_FIELDS = ["name", "phone", "email", "company", "position"]
+
+TOKEN_FILE = os.path.join(DATA_DIR, "admin_token.txt")
+
+
+def get_or_create_admin_token():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, "r") as f:
+            return f.read().strip()
+    token = secrets.token_urlsafe(32)
+    with open(TOKEN_FILE, "w") as f:
+        f.write(token)
+    return token
 
 
 def ensure_csv():
@@ -77,10 +91,18 @@ def thanks():
 
 
 @app.route("/admin")
-def admin():
+def admin_no_token():
+    return abort(403)
+
+
+@app.route("/admin/<token>")
+def admin(token):
+    if token != get_or_create_admin_token():
+        return abort(403)
     ensure_csv()
     rows = []
     with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
-    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES)
+    share_url = request.url
+    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url)
