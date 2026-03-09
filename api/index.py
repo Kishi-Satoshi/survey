@@ -25,13 +25,13 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templat
 app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
 FIELDNAMES = [
-    "受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "役職",
+    "受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "部署名", "役職",
     "A3-2 満足度", "A3-2 感想", "H4-1 満足度", "H4-1 感想", "テクバンへのご要望",
 ]
-REQUIRED_FIELDS = ["name", "phone", "email", "company", "position"]
+REQUIRED_FIELDS = ["name", "phone", "email", "company", "department", "position"]
 
 _DB_COLS = [
-    "submitted_at", "name", "phone", "email", "company", "position",
+    "submitted_at", "name", "phone", "email", "company", "department", "position",
     "seminar1_rating", "seminar1_comment", "seminar2_rating", "seminar2_comment", "request",
 ]
 _JP_TO_DB = dict(zip(FIELDNAMES, _DB_COLS))
@@ -79,6 +79,7 @@ def _init_pg():
                 phone TEXT NOT NULL,
                 email TEXT NOT NULL,
                 company TEXT NOT NULL,
+                department TEXT NOT NULL DEFAULT '',
                 position TEXT NOT NULL,
                 seminar1_rating TEXT NOT NULL DEFAULT '',
                 seminar1_comment TEXT NOT NULL DEFAULT '',
@@ -107,9 +108,9 @@ def _pg_save(data: dict):
     try:
         row = {_JP_TO_DB[k]: v for k, v in data.items()}
         conn.run(
-            "INSERT INTO responses (submitted_at, name, phone, email, company, position,"
+            "INSERT INTO responses (submitted_at, name, phone, email, company, department, position,"
             " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request)"
-            " VALUES (:submitted_at, :name, :phone, :email, :company, :position,"
+            " VALUES (:submitted_at, :name, :phone, :email, :company, :department, :position,"
             " :seminar1_rating, :seminar1_comment, :seminar2_rating, :seminar2_comment, :request)",
             **row,
         )
@@ -129,7 +130,7 @@ def _pg_load():
         return None
     try:
         result = conn.run(
-            "SELECT submitted_at, name, phone, email, company, position,"
+            "SELECT submitted_at, name, phone, email, company, department, position,"
             " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
             " FROM responses ORDER BY id"
         )
@@ -207,6 +208,7 @@ def submit():
         "phone": request.form.get("phone", "").strip(),
         "email": request.form.get("email", "").strip(),
         "company": request.form.get("company", "").strip(),
+        "department": request.form.get("department", "").strip(),
         "position": request.form.get("position", "").strip(),
         "seminar1_rating": request.form.get("seminar1_rating", "").strip(),
         "seminar1_comment": request.form.get("seminar1_comment", "").strip(),
@@ -229,6 +231,7 @@ def submit():
         "電話番号": values["phone"],
         "メールアドレス": values["email"],
         "会社名": values["company"],
+        "部署名": values["department"],
         "役職": values["position"],
         "A3-2 満足度": values["seminar1_rating"],
         "A3-2 感想": values["seminar1_comment"],

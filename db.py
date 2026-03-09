@@ -15,12 +15,12 @@ except ImportError:
     pg8000 = None
 
 FIELDNAMES = [
-    "受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "役職",
+    "受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "部署名", "役職",
     "A3-2 満足度", "A3-2 感想", "H4-1 満足度", "H4-1 感想", "テクバンへのご要望",
 ]
 
 _DB_COLS = [
-    "submitted_at", "name", "phone", "email", "company", "position",
+    "submitted_at", "name", "phone", "email", "company", "department", "position",
     "seminar1_rating", "seminar1_comment", "seminar2_rating", "seminar2_comment", "request",
 ]
 _JP_TO_DB = dict(zip(FIELDNAMES, _DB_COLS))
@@ -64,6 +64,7 @@ def init_db():
                 phone TEXT NOT NULL,
                 email TEXT NOT NULL,
                 company TEXT NOT NULL,
+                department TEXT NOT NULL DEFAULT '',
                 position TEXT NOT NULL,
                 seminar1_rating TEXT NOT NULL DEFAULT '',
                 seminar1_comment TEXT NOT NULL DEFAULT '',
@@ -90,9 +91,9 @@ def save_response(data: dict):
     try:
         row = {_JP_TO_DB[k]: v for k, v in data.items()}
         conn.run(
-            "INSERT INTO responses (submitted_at, name, phone, email, company, position,"
+            "INSERT INTO responses (submitted_at, name, phone, email, company, department, position,"
             " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request)"
-            " VALUES (:submitted_at, :name, :phone, :email, :company, :position,"
+            " VALUES (:submitted_at, :name, :phone, :email, :company, :department, :position,"
             " :seminar1_rating, :seminar1_comment, :seminar2_rating, :seminar2_comment, :request)",
             **row,
         )
@@ -113,7 +114,7 @@ def load_responses():
         return None
     try:
         result = conn.run(
-            "SELECT submitted_at, name, phone, email, company, position,"
+            "SELECT submitted_at, name, phone, email, company, department, position,"
             " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
             " FROM responses ORDER BY id"
         )

@@ -98,7 +98,7 @@
           id="phone"
           name="phone"
           value="{{ values.phone or '' }}"
-          placeholder="090-1234-5678"
+          placeholder="09012345678"
         >
         {% if errors.phone %}
         <div class="invalid-feedback">{{ errors.phone }}</div>
@@ -141,6 +141,24 @@
         {% endif %}
       </div>
 
+      <!-- 部署名 -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold" for="department">
+          部署名<span class="required-mark">*</span>
+        </label>
+        <input
+          type="text"
+          class="form-control {% if errors.department %}is-invalid{% endif %}"
+          id="department"
+          name="department"
+          value="{{ values.department or '' }}"
+          placeholder="営業部"
+        >
+        {% if errors.department %}
+        <div class="invalid-feedback">{{ errors.department }}</div>
+        {% endif %}
+      </div>
+
       <!-- 役職 -->
       <div class="mb-3">
         <label class="form-label fw-semibold" for="position">
@@ -152,7 +170,7 @@
           id="position"
           name="position"
           value="{{ values.position or '' }}"
-          placeholder="営業部長"
+          placeholder="部長"
         >
         {% if errors.position %}
         <div class="invalid-feedback">{{ errors.position }}</div>

@@ -14,7 +14,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 CSV_FILE = os.path.join(DATA_DIR, "responses.csv")
 
 FIELDNAMES = db.FIELDNAMES
-REQUIRED_FIELDS = ["name", "phone", "email", "company", "position"]
+REQUIRED_FIELDS = ["name", "phone", "email", "company", "department", "position"]
 
 TOKEN_FILE = os.path.join(DATA_DIR, "admin_token.txt")
 
@@ -74,6 +74,7 @@ def submit():
         "phone": request.form.get("phone", "").strip(),
         "email": request.form.get("email", "").strip(),
         "company": request.form.get("company", "").strip(),
+        "department": request.form.get("department", "").strip(),
         "position": request.form.get("position", "").strip(),
         "seminar1_rating": request.form.get("seminar1_rating", "").strip(),
         "seminar1_comment": request.form.get("seminar1_comment", "").strip(),
@@ -96,6 +97,7 @@ def submit():
         "電話番号": values["phone"],
         "メールアドレス": values["email"],
         "会社名": values["company"],
+        "部署名": values["department"],
         "役職": values["position"],
         "A3-2 満足度": values["seminar1_rating"],
         "A3-2 感想": values["seminar1_comment"],
