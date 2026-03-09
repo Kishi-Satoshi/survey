@@ -494,7 +494,8 @@ def admin_csv(token):
     writer = csv.DictWriter(buf, fieldnames=FIELDNAMES)
     writer.writeheader()
     for row in rows:
-        writer.writerow(row)
+        csv_row = {k: row[k] for k in FIELDNAMES}
+        writer.writerow(csv_row)
 
     return Response(
         buf.getvalue(),

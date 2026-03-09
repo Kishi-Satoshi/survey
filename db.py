@@ -255,5 +255,6 @@ def responses_to_csv_string():
     writer = csv.DictWriter(buf, fieldnames=FIELDNAMES)
     writer.writeheader()
     for row in rows:
-        writer.writerow(row)
+        csv_row = {k: row[k] for k in FIELDNAMES}
+        writer.writerow(csv_row)
     return buf.getvalue()
