@@ -16,6 +16,50 @@
       padding: 2rem;
     }
     .required-mark { color: #dc3545; margin-left: 2px; }
+    .seminar-section {
+      background: #f0f4ff;
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .seminar-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
+    .star-rating {
+      display: flex;
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+      gap: 2px;
+    }
+    .star-rating input { display: none; }
+    .star-rating label {
+      font-size: 1.8rem;
+      color: #ccc;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .star-rating input:checked ~ label,
+    .star-rating label:hover,
+    .star-rating label:hover ~ label {
+      color: #ffc107;
+    }
+    .rating-option {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .not-watched-label {
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #666;
+    }
   </style>
 </head>
 <body>
@@ -115,18 +159,102 @@
         {% endif %}
       </div>
 
-      <!-- セミナー感想 -->
+      <hr class="my-4">
+
+      <!-- セミナー1: A3-2 -->
+      <div class="seminar-section">
+        <div class="seminar-title">
+          A3-2　AIがQAエンジニアの仕事を奪うのか？<br>
+          <span class="text-muted" style="font-size:0.85rem;">登壇者：安野 貴博（チームみらい）長島 貴雄・豊田 悠太（テクバン）</span>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">満足度</label>
+          <div class="rating-option">
+            <div class="star-rating">
+              <input type="radio" id="s1star5" name="seminar1_rating" value="5" {% if values.seminar1_rating == '5' %}checked{% endif %}>
+              <label for="s1star5" title="5">&#9733;</label>
+              <input type="radio" id="s1star4" name="seminar1_rating" value="4" {% if values.seminar1_rating == '4' %}checked{% endif %}>
+              <label for="s1star4" title="4">&#9733;</label>
+              <input type="radio" id="s1star3" name="seminar1_rating" value="3" {% if values.seminar1_rating == '3' %}checked{% endif %}>
+              <label for="s1star3" title="3">&#9733;</label>
+              <input type="radio" id="s1star2" name="seminar1_rating" value="2" {% if values.seminar1_rating == '2' %}checked{% endif %}>
+              <label for="s1star2" title="2">&#9733;</label>
+              <input type="radio" id="s1star1" name="seminar1_rating" value="1" {% if values.seminar1_rating == '1' %}checked{% endif %}>
+              <label for="s1star1" title="1">&#9733;</label>
+            </div>
+            <label class="not-watched-label">
+              <input type="radio" name="seminar1_rating" value="未視聴" {% if values.seminar1_rating == '未視聴' %}checked{% endif %}>
+              未視聴
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label fw-semibold" for="seminar1_comment">感想</label>
+          <textarea
+            class="form-control"
+            id="seminar1_comment"
+            name="seminar1_comment"
+            rows="3"
+            placeholder="ご自由にご記入ください。"
+          >{{ values.seminar1_comment or '' }}</textarea>
+        </div>
+      </div>
+
+      <!-- セミナー2: H4-1 -->
+      <div class="seminar-section">
+        <div class="seminar-title">
+          H4-1　QAって、この先どうなるの？──新卒QAが語る"伸びる人・止まる人"の分岐点<br>
+          <span class="text-muted" style="font-size:0.85rem;">登壇者：岩崎 凜也（テクバン）荻原 碧生（テクバン）平間 良成（テクバン）</span>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">満足度</label>
+          <div class="rating-option">
+            <div class="star-rating">
+              <input type="radio" id="s2star5" name="seminar2_rating" value="5" {% if values.seminar2_rating == '5' %}checked{% endif %}>
+              <label for="s2star5" title="5">&#9733;</label>
+              <input type="radio" id="s2star4" name="seminar2_rating" value="4" {% if values.seminar2_rating == '4' %}checked{% endif %}>
+              <label for="s2star4" title="4">&#9733;</label>
+              <input type="radio" id="s2star3" name="seminar2_rating" value="3" {% if values.seminar2_rating == '3' %}checked{% endif %}>
+              <label for="s2star3" title="3">&#9733;</label>
+              <input type="radio" id="s2star2" name="seminar2_rating" value="2" {% if values.seminar2_rating == '2' %}checked{% endif %}>
+              <label for="s2star2" title="2">&#9733;</label>
+              <input type="radio" id="s2star1" name="seminar2_rating" value="1" {% if values.seminar2_rating == '1' %}checked{% endif %}>
+              <label for="s2star1" title="1">&#9733;</label>
+            </div>
+            <label class="not-watched-label">
+              <input type="radio" name="seminar2_rating" value="未視聴" {% if values.seminar2_rating == '未視聴' %}checked{% endif %}>
+              未視聴
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label fw-semibold" for="seminar2_comment">感想</label>
+          <textarea
+            class="form-control"
+            id="seminar2_comment"
+            name="seminar2_comment"
+            rows="3"
+            placeholder="ご自由にご記入ください。"
+          >{{ values.seminar2_comment or '' }}</textarea>
+        </div>
+      </div>
+
+      <!-- テクバンへのご要望 -->
       <div class="mb-4">
-        <label class="form-label fw-semibold" for="comment">
-          本日のセミナーで良かった点・もしくは不満な点をご記入ください。
+        <label class="form-label fw-semibold" for="request">
+          テクバンへのご要望がございましたら、ご記載ください。
         </label>
         <textarea
           class="form-control"
-          id="comment"
-          name="comment"
-          rows="5"
+          id="request"
+          name="request"
+          rows="4"
           placeholder="ご自由にご記入ください。"
-        >{{ values.comment or '' }}</textarea>
+        >{{ values.request or '' }}</textarea>
       </div>
 
       <p class="text-muted small mb-3"><span class="required-mark">*</span> は必須項目です。</p>

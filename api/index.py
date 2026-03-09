@@ -24,10 +24,16 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templat
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
-FIELDNAMES = ["受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "役職", "セミナー感想"]
+FIELDNAMES = [
+    "受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "役職",
+    "A3-2 満足度", "A3-2 感想", "H4-1 満足度", "H4-1 感想", "テクバンへのご要望",
+]
 REQUIRED_FIELDS = ["name", "phone", "email", "company", "position"]
 
-_DB_COLS = ["submitted_at", "name", "phone", "email", "company", "position", "comment"]
+_DB_COLS = [
+    "submitted_at", "name", "phone", "email", "company", "position",
+    "seminar1_rating", "seminar1_comment", "seminar2_rating", "seminar2_comment", "request",
+]
 _JP_TO_DB = dict(zip(FIELDNAMES, _DB_COLS))
 _DB_TO_JP = dict(zip(_DB_COLS, FIELDNAMES))
 
@@ -74,7 +80,11 @@ def _init_pg():
                 email TEXT NOT NULL,
                 company TEXT NOT NULL,
                 position TEXT NOT NULL,
-                comment TEXT NOT NULL DEFAULT ''
+                seminar1_rating TEXT NOT NULL DEFAULT '',
+                seminar1_comment TEXT NOT NULL DEFAULT '',
+                seminar2_rating TEXT NOT NULL DEFAULT '',
+                seminar2_comment TEXT NOT NULL DEFAULT '',
+                request TEXT NOT NULL DEFAULT ''
             )
         """)
         return True
@@ -97,8 +107,10 @@ def _pg_save(data: dict):
     try:
         row = {_JP_TO_DB[k]: v for k, v in data.items()}
         conn.run(
-            "INSERT INTO responses (submitted_at, name, phone, email, company, position, comment)"
-            " VALUES (:submitted_at, :name, :phone, :email, :company, :position, :comment)",
+            "INSERT INTO responses (submitted_at, name, phone, email, company, position,"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request)"
+            " VALUES (:submitted_at, :name, :phone, :email, :company, :position,"
+            " :seminar1_rating, :seminar1_comment, :seminar2_rating, :seminar2_comment, :request)",
             **row,
         )
         return True
@@ -117,7 +129,8 @@ def _pg_load():
         return None
     try:
         result = conn.run(
-            "SELECT submitted_at, name, phone, email, company, position, comment"
+            "SELECT submitted_at, name, phone, email, company, position,"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
             " FROM responses ORDER BY id"
         )
         rows = []
@@ -195,7 +208,11 @@ def submit():
         "email": request.form.get("email", "").strip(),
         "company": request.form.get("company", "").strip(),
         "position": request.form.get("position", "").strip(),
-        "comment": request.form.get("comment", "").strip(),
+        "seminar1_rating": request.form.get("seminar1_rating", "").strip(),
+        "seminar1_comment": request.form.get("seminar1_comment", "").strip(),
+        "seminar2_rating": request.form.get("seminar2_rating", "").strip(),
+        "seminar2_comment": request.form.get("seminar2_comment", "").strip(),
+        "request": request.form.get("request", "").strip(),
     }
 
     errors = {}
@@ -213,7 +230,11 @@ def submit():
         "メールアドレス": values["email"],
         "会社名": values["company"],
         "役職": values["position"],
-        "セミナー感想": values["comment"],
+        "A3-2 満足度": values["seminar1_rating"],
+        "A3-2 感想": values["seminar1_comment"],
+        "H4-1 満足度": values["seminar2_rating"],
+        "H4-1 感想": values["seminar2_comment"],
+        "テクバンへのご要望": values["request"],
     }
 
     if _use_pg:

@@ -75,7 +75,11 @@ def submit():
         "email": request.form.get("email", "").strip(),
         "company": request.form.get("company", "").strip(),
         "position": request.form.get("position", "").strip(),
-        "comment": request.form.get("comment", "").strip(),
+        "seminar1_rating": request.form.get("seminar1_rating", "").strip(),
+        "seminar1_comment": request.form.get("seminar1_comment", "").strip(),
+        "seminar2_rating": request.form.get("seminar2_rating", "").strip(),
+        "seminar2_comment": request.form.get("seminar2_comment", "").strip(),
+        "request": request.form.get("request", "").strip(),
     }
 
     errors = {}
@@ -93,7 +97,11 @@ def submit():
         "メールアドレス": values["email"],
         "会社名": values["company"],
         "役職": values["position"],
-        "セミナー感想": values["comment"],
+        "A3-2 満足度": values["seminar1_rating"],
+        "A3-2 感想": values["seminar1_comment"],
+        "H4-1 満足度": values["seminar2_rating"],
+        "H4-1 感想": values["seminar2_comment"],
+        "テクバンへのご要望": values["request"],
     }
 
     if _use_pg:
