@@ -36,6 +36,9 @@
             {% for col in fieldnames %}
             <th>{{ col }}</th>
             {% endfor %}
+            {% if admin_token %}
+            <th style="width: 60px;">操作</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
@@ -44,6 +47,14 @@
             {% for col in fieldnames %}
             <td>{{ row[col] }}</td>
             {% endfor %}
+            {% if admin_token %}
+            <td>
+              <form method="POST" action="/admin/{{ admin_token }}/delete/{{ row.id }}"
+                    onsubmit="return confirm('この回答を削除しますか？');" style="margin:0;">
+                <button type="submit" class="btn btn-outline-danger btn-sm">削除</button>
+              </form>
+            </td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>

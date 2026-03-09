@@ -142,16 +142,34 @@ def _pg_load():
         return None
     try:
         result = conn.run(
-            "SELECT submitted_at, name, phone, email, company, department, position,"
+            "SELECT id, submitted_at, name, phone, email, company, department, position,"
             " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
             " FROM responses ORDER BY id"
         )
         rows = []
         for r in result:
-            rows.append({_DB_TO_JP[col]: val for col, val in zip(_DB_COLS, r)})
+            row = {"id": r[0]}
+            row.update({_DB_TO_JP[col]: val for col, val in zip(_DB_COLS, r[1:])})
+            rows.append(row)
         return rows
     except Exception:
         return None
+    finally:
+        conn.close()
+
+
+def _pg_delete(response_id):
+    try:
+        conn = _pg_conn()
+    except Exception:
+        return False
+    if conn is None:
+        return False
+    try:
+        conn.run("DELETE FROM responses WHERE id = :id", id=response_id)
+        return True
+    except Exception:
+        return False
     finally:
         conn.close()
 
@@ -192,7 +210,21 @@ def save_response_csv(data: dict):
 def load_responses_csv():
     ensure_csv()
     with open(CSV_FILE, "r", encoding="utf-8-sig") as f:
-        return list(csv.DictReader(f))
+        rows = list(csv.DictReader(f))
+    for i, row in enumerate(rows):
+        row["id"] = i
+    return rows
+
+
+def delete_response_csv(response_id):
+    rows = load_responses_csv()
+    rows = [r for r in rows if r["id"] != response_id]
+    with open(CSV_FILE, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
+        writer.writeheader()
+        for r in rows:
+            del r["id"]
+            writer.writerow(r)
 
 
 # --- Routes ---
@@ -268,13 +300,13 @@ def thanks():
     return render_template("thanks.html")
 
 
-def render_admin(share_url):
+def render_admin(share_url, token):
     if _use_pg:
         rows = _pg_load() or []
     else:
         rows = load_responses_csv()
     csv_url = share_url.rstrip("/") + "/csv" if share_url else None
-    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url, csv_url=csv_url)
+    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url, csv_url=csv_url, admin_token=token)
 
 
 @app.route("/admin", methods=["GET", "POST"])
@@ -282,7 +314,7 @@ def admin_login():
     if request.method == "POST":
         token = request.form.get("token", "").strip()
         if token == get_or_create_admin_token():
-            return render_admin(request.host_url.rstrip("/") + "/admin/" + token)
+            return render_admin(request.host_url.rstrip("/") + "/admin/" + token, token)
         return render_template("login.html", error="トークンが正しくありません。"), 403
     return render_template("login.html", error=None)
 
@@ -291,7 +323,18 @@ def admin_login():
 def admin(token):
     if token != get_or_create_admin_token():
         return abort(403)
-    return render_admin(request.url)
+    return render_admin(request.url, token)
+
+
+@app.route("/admin/<token>/delete/<int:response_id>", methods=["POST"])
+def admin_delete(token, response_id):
+    if token != get_or_create_admin_token():
+        return abort(403)
+    if _use_pg:
+        _pg_delete(response_id)
+    else:
+        delete_response_csv(response_id)
+    return redirect(f"/admin/{token}")
 
 
 @app.route("/admin/<token>/csv")

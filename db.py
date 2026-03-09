@@ -126,16 +126,35 @@ def load_responses():
         return None
     try:
         result = conn.run(
-            "SELECT submitted_at, name, phone, email, company, department, position,"
+            "SELECT id, submitted_at, name, phone, email, company, department, position,"
             " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
             " FROM responses ORDER BY id"
         )
         rows = []
         for r in result:
-            rows.append({_DB_TO_JP[col]: val for col, val in zip(_DB_COLS, r)})
+            row = {"id": r[0]}
+            row.update({_DB_TO_JP[col]: val for col, val in zip(_DB_COLS, r[1:])})
+            rows.append(row)
         return rows
     except Exception:
         return None
+    finally:
+        conn.close()
+
+
+def delete_response(response_id):
+    """Delete a response by its database id."""
+    try:
+        conn = _get_conn()
+    except Exception:
+        return False
+    if conn is None:
+        return False
+    try:
+        conn.run("DELETE FROM responses WHERE id = :id", id=response_id)
+        return True
+    except Exception:
+        return False
     finally:
         conn.close()
 
