@@ -227,12 +227,15 @@ def submit():
         "seminar2_rating": request.form.get("seminar2_rating", "").strip(),
         "seminar2_comment": request.form.get("seminar2_comment", "").strip(),
         "request": request.form.get("request", "").strip(),
+        "privacy": request.form.get("privacy", ""),
     }
 
     errors = {}
     for field in REQUIRED_FIELDS:
         if not values[field]:
             errors[field] = "この項目は必須です。"
+    if not values["privacy"]:
+        errors["privacy"] = "同意が必要です。"
 
     if errors:
         return render_template("form.html", errors=errors, values=values)

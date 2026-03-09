@@ -275,6 +275,19 @@
         >{{ values.request or '' }}</textarea>
       </div>
 
+      <div class="mb-4 form-check">
+        <input type="checkbox" class="form-check-input {% if errors.privacy %}is-invalid{% endif %}"
+               id="privacy" name="privacy" value="1"
+               {% if values.privacy %}checked{% endif %}>
+        <label class="form-check-label" for="privacy">
+          <a href="https://www.techvan.co.jp/privacy/about.html" target="_blank" rel="noopener noreferrer">個人情報の取り扱いについて</a>を確認し、同意します。
+          <span class="required-mark">*</span>
+        </label>
+        {% if errors.privacy %}
+          <div class="invalid-feedback">{{ errors.privacy }}</div>
+        {% endif %}
+      </div>
+
       <p class="text-muted small mb-3"><span class="required-mark">*</span> は必須項目です。</p>
 
       <div class="d-grid">
