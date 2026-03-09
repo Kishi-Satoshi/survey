@@ -100,6 +100,28 @@ def _init_pg():
             conn.run("ALTER TABLE responses DROP COLUMN IF EXISTS comment")
         except Exception:
             pass
+        # Archive table for soft-deleted responses (30-day retention)
+        conn.run("""
+            CREATE TABLE IF NOT EXISTS archived_responses (
+                id SERIAL PRIMARY KEY,
+                original_id INTEGER NOT NULL,
+                deleted_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                submitted_at TEXT NOT NULL,
+                name TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                email TEXT NOT NULL,
+                company TEXT NOT NULL DEFAULT '',
+                department TEXT NOT NULL DEFAULT '',
+                position TEXT NOT NULL,
+                seminar1_rating TEXT NOT NULL DEFAULT '',
+                seminar1_comment TEXT NOT NULL DEFAULT '',
+                seminar2_rating TEXT NOT NULL DEFAULT '',
+                seminar2_comment TEXT NOT NULL DEFAULT '',
+                request TEXT NOT NULL DEFAULT ''
+            )
+        """)
+        # Purge archived responses older than 30 days
+        conn.run("DELETE FROM archived_responses WHERE deleted_at < NOW() - INTERVAL '30 days'")
         return True
     except Exception:
         return False
@@ -159,6 +181,7 @@ def _pg_load():
 
 
 def _pg_delete(response_id):
+    """Soft-delete: move to archive table."""
     try:
         conn = _pg_conn()
     except Exception:
@@ -166,7 +189,68 @@ def _pg_delete(response_id):
     if conn is None:
         return False
     try:
+        conn.run(
+            "INSERT INTO archived_responses (original_id, submitted_at, name, phone, email,"
+            " company, department, position, seminar1_rating, seminar1_comment,"
+            " seminar2_rating, seminar2_comment, request)"
+            " SELECT id, submitted_at, name, phone, email, company, department, position,"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
+            " FROM responses WHERE id = :id",
+            id=response_id,
+        )
         conn.run("DELETE FROM responses WHERE id = :id", id=response_id)
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+
+def _pg_load_archived():
+    try:
+        conn = _pg_conn()
+    except Exception:
+        return None
+    if conn is None:
+        return None
+    try:
+        conn.run("DELETE FROM archived_responses WHERE deleted_at < NOW() - INTERVAL '30 days'")
+        result = conn.run(
+            "SELECT id, deleted_at, submitted_at, name, phone, email, company, department,"
+            " position, seminar1_rating, seminar1_comment, seminar2_rating,"
+            " seminar2_comment, request"
+            " FROM archived_responses ORDER BY deleted_at DESC"
+        )
+        rows = []
+        for r in result:
+            row = {"id": r[0], "deleted_at": r[1].strftime("%Y-%m-%d %H:%M") if r[1] else ""}
+            row.update({_DB_TO_JP[col]: val for col, val in zip(_DB_COLS, r[2:])})
+            rows.append(row)
+        return rows
+    except Exception:
+        return None
+    finally:
+        conn.close()
+
+
+def _pg_restore(archive_id):
+    try:
+        conn = _pg_conn()
+    except Exception:
+        return False
+    if conn is None:
+        return False
+    try:
+        conn.run(
+            "INSERT INTO responses (submitted_at, name, phone, email, company, department,"
+            " position, seminar1_rating, seminar1_comment, seminar2_rating,"
+            " seminar2_comment, request)"
+            " SELECT submitted_at, name, phone, email, company, department, position,"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
+            " FROM archived_responses WHERE id = :id",
+            id=archive_id,
+        )
+        conn.run("DELETE FROM archived_responses WHERE id = :id", id=archive_id)
         return True
     except Exception:
         return False
@@ -216,13 +300,58 @@ def load_responses_csv():
     return rows
 
 
+ARCHIVE_FIELDNAMES = ["deleted_at"] + FIELDNAMES
+ARCHIVE_CSV = os.path.join(DATA_DIR, "archived_responses.csv")
+
+
+def ensure_archive_csv():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    if not os.path.exists(ARCHIVE_CSV):
+        with open(ARCHIVE_CSV, "w", newline="", encoding="utf-8-sig") as f:
+            csv.DictWriter(f, fieldnames=ARCHIVE_FIELDNAMES).writeheader()
+
+
 def delete_response_csv(response_id):
     rows = load_responses_csv()
-    rows = [r for r in rows if r["id"] != response_id]
+    target = next((r for r in rows if r["id"] == response_id), None)
+    remaining = [r for r in rows if r["id"] != response_id]
     with open(CSV_FILE, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
         writer.writeheader()
-        for r in rows:
+        for r in remaining:
+            del r["id"]
+            writer.writerow(r)
+    if target:
+        ensure_archive_csv()
+        del target["id"]
+        target["deleted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+        with open(ARCHIVE_CSV, "a", newline="", encoding="utf-8-sig") as f:
+            csv.DictWriter(f, fieldnames=ARCHIVE_FIELDNAMES).writerow(target)
+
+
+def load_archived_csv():
+    ensure_archive_csv()
+    with open(ARCHIVE_CSV, "r", encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
+    from datetime import timedelta
+    cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M")
+    rows = [r for r in rows if r.get("deleted_at", "") >= cutoff]
+    for i, row in enumerate(rows):
+        row["id"] = i
+    return rows
+
+
+def restore_response_csv(archive_id):
+    rows = load_archived_csv()
+    target = next((r for r in rows if r["id"] == archive_id), None)
+    remaining = [r for r in rows if r["id"] != archive_id]
+    if target:
+        restore_row = {k: target[k] for k in FIELDNAMES}
+        save_response_csv(restore_row)
+    with open(ARCHIVE_CSV, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(f, fieldnames=ARCHIVE_FIELDNAMES)
+        writer.writeheader()
+        for r in remaining:
             del r["id"]
             writer.writerow(r)
 
@@ -303,10 +432,12 @@ def thanks():
 def render_admin(share_url, token):
     if _use_pg:
         rows = _pg_load() or []
+        archived = _pg_load_archived() or []
     else:
         rows = load_responses_csv()
+        archived = load_archived_csv()
     csv_url = share_url.rstrip("/") + "/csv" if share_url else None
-    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url, csv_url=csv_url, admin_token=token)
+    return render_template("admin.html", rows=rows, archived=archived, fieldnames=FIELDNAMES, share_url=share_url, csv_url=csv_url, admin_token=token)
 
 
 @app.route("/admin", methods=["GET", "POST"])
@@ -334,6 +465,17 @@ def admin_delete(token, response_id):
         _pg_delete(response_id)
     else:
         delete_response_csv(response_id)
+    return redirect(f"/admin/{token}")
+
+
+@app.route("/admin/<token>/restore/<int:archive_id>", methods=["POST"])
+def admin_restore(token, archive_id):
+    if token != get_or_create_admin_token():
+        return abort(403)
+    if _use_pg:
+        _pg_restore(archive_id)
+    else:
+        restore_response_csv(archive_id)
     return redirect(f"/admin/{token}")
 
 

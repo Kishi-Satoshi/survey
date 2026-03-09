@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>回答一覧 | セミナーアンケート管理</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <style>
     body { background-color: #f8f9fa; }
     .container { margin-top: 32px; margin-bottom: 48px; }
@@ -28,43 +29,95 @@
       </div>
     </div>
 
-    {% if rows %}
-    <div class="table-responsive">
-      <table class="table table-bordered table-striped table-sm align-middle">
-        <thead class="table-dark">
-          <tr>
-            {% for col in fieldnames %}
-            <th>{{ col }}</th>
-            {% endfor %}
-            {% if admin_token %}
-            <th style="width: 60px;">操作</th>
-            {% endif %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in rows %}
-          <tr>
-            {% for col in fieldnames %}
-            <td>{{ row[col] }}</td>
-            {% endfor %}
-            {% if admin_token %}
-            <td>
-              <form method="POST" action="/admin/{{ admin_token }}/delete/{{ row.id }}"
-                    onsubmit="return confirm('この回答を削除しますか？');" style="margin:0;">
-                <button type="submit" class="btn btn-outline-danger btn-sm">削除</button>
-              </form>
-            </td>
-            {% endif %}
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="alert alert-info">まだ回答がありません。</div>
+    {% if admin_token and archived %}
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-responses" type="button">回答一覧</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-archive" type="button">
+          アーカイブ <span class="badge bg-secondary">{{ archived|length }}</span>
+        </button>
+      </li>
+    </ul>
     {% endif %}
 
-    <a href="/" class="btn btn-outline-secondary btn-sm">フォームへ戻る</a>
+    <div class="tab-content">
+      <div class="tab-pane fade show active" id="tab-responses">
+        {% if rows %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped table-sm align-middle">
+            <thead class="table-dark">
+              <tr>
+                {% for col in fieldnames %}
+                <th>{{ col }}</th>
+                {% endfor %}
+                {% if admin_token %}
+                <th style="width: 60px;">操作</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+              <tr>
+                {% for col in fieldnames %}
+                <td>{{ row[col] }}</td>
+                {% endfor %}
+                {% if admin_token %}
+                <td>
+                  <form method="POST" action="/admin/{{ admin_token }}/delete/{{ row.id }}"
+                        onsubmit="return confirm('この回答を削除しますか？');" style="margin:0;">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">削除</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">まだ回答がありません。</div>
+        {% endif %}
+      </div>
+
+      {% if admin_token and archived %}
+      <div class="tab-pane fade" id="tab-archive">
+        <p class="text-muted small">削除された回答は30日間保存されます。期間を過ぎると自動的に完全削除されます。</p>
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped table-sm align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>削除日時</th>
+                {% for col in fieldnames %}
+                <th>{{ col }}</th>
+                {% endfor %}
+                <th style="width: 60px;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in archived %}
+              <tr>
+                <td>{{ row.deleted_at }}</td>
+                {% for col in fieldnames %}
+                <td>{{ row[col] }}</td>
+                {% endfor %}
+                <td>
+                  <form method="POST" action="/admin/{{ admin_token }}/restore/{{ row.id }}"
+                        onsubmit="return confirm('この回答を復元しますか？');" style="margin:0;">
+                    <button type="submit" class="btn btn-outline-success btn-sm">復元</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <a href="/" class="btn btn-outline-secondary btn-sm mt-3">フォームへ戻る</a>
   </div>
   {% if share_url %}
   <script>

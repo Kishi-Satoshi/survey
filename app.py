@@ -63,13 +63,58 @@ def load_responses_csv():
     return rows
 
 
+ARCHIVE_FIELDNAMES = ["deleted_at"] + FIELDNAMES
+ARCHIVE_CSV = os.path.join(DATA_DIR, "archived_responses.csv")
+
+
+def ensure_archive_csv():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    if not os.path.exists(ARCHIVE_CSV):
+        with open(ARCHIVE_CSV, "w", newline="", encoding="utf-8-sig") as f:
+            csv.DictWriter(f, fieldnames=ARCHIVE_FIELDNAMES).writeheader()
+
+
 def delete_response_csv(response_id):
     rows = load_responses_csv()
-    rows = [r for r in rows if r["id"] != response_id]
+    target = next((r for r in rows if r["id"] == response_id), None)
+    remaining = [r for r in rows if r["id"] != response_id]
     with open(CSV_FILE, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
         writer.writeheader()
-        for r in rows:
+        for r in remaining:
+            del r["id"]
+            writer.writerow(r)
+    if target:
+        ensure_archive_csv()
+        del target["id"]
+        target["deleted_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+        with open(ARCHIVE_CSV, "a", newline="", encoding="utf-8-sig") as f:
+            csv.DictWriter(f, fieldnames=ARCHIVE_FIELDNAMES).writerow(target)
+
+
+def load_archived_csv():
+    ensure_archive_csv()
+    with open(ARCHIVE_CSV, "r", encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
+    from datetime import timedelta
+    cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M")
+    rows = [r for r in rows if r.get("deleted_at", "") >= cutoff]
+    for i, row in enumerate(rows):
+        row["id"] = i
+    return rows
+
+
+def restore_response_csv(archive_id):
+    rows = load_archived_csv()
+    target = next((r for r in rows if r["id"] == archive_id), None)
+    remaining = [r for r in rows if r["id"] != archive_id]
+    if target:
+        restore_row = {k: target[k] for k in FIELDNAMES}
+        save_response_csv(restore_row)
+    with open(ARCHIVE_CSV, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(f, fieldnames=ARCHIVE_FIELDNAMES)
+        writer.writeheader()
+        for r in remaining:
             del r["id"]
             writer.writerow(r)
 
@@ -139,10 +184,12 @@ def thanks():
 def render_admin(share_url, token):
     if _use_pg:
         rows = db.load_responses() or []
+        archived = db.load_archived() or []
     else:
         rows = load_responses_csv()
+        archived = load_archived_csv()
     csv_url = share_url.rstrip("/") + "/csv" if share_url else None
-    return render_template("admin.html", rows=rows, fieldnames=FIELDNAMES, share_url=share_url, csv_url=csv_url, admin_token=token)
+    return render_template("admin.html", rows=rows, archived=archived, fieldnames=FIELDNAMES, share_url=share_url, csv_url=csv_url, admin_token=token)
 
 
 @app.route("/admin", methods=["GET", "POST"])
@@ -170,6 +217,17 @@ def admin_delete(token, response_id):
         db.delete_response(response_id)
     else:
         delete_response_csv(response_id)
+    return redirect(url_for("admin", token=token))
+
+
+@app.route("/admin/<token>/restore/<int:archive_id>", methods=["POST"])
+def admin_restore(token, archive_id):
+    if token != get_or_create_admin_token():
+        return abort(403)
+    if _use_pg:
+        db.restore_response(archive_id)
+    else:
+        restore_response_csv(archive_id)
     return redirect(url_for("admin", token=token))
 
 

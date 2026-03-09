@@ -85,6 +85,28 @@ def init_db():
             conn.run("ALTER TABLE responses DROP COLUMN IF EXISTS comment")
         except Exception:
             pass
+        # Archive table for soft-deleted responses (30-day retention)
+        conn.run("""
+            CREATE TABLE IF NOT EXISTS archived_responses (
+                id SERIAL PRIMARY KEY,
+                original_id INTEGER NOT NULL,
+                deleted_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                submitted_at TEXT NOT NULL,
+                name TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                email TEXT NOT NULL,
+                company TEXT NOT NULL DEFAULT '',
+                department TEXT NOT NULL DEFAULT '',
+                position TEXT NOT NULL,
+                seminar1_rating TEXT NOT NULL DEFAULT '',
+                seminar1_comment TEXT NOT NULL DEFAULT '',
+                seminar2_rating TEXT NOT NULL DEFAULT '',
+                seminar2_comment TEXT NOT NULL DEFAULT '',
+                request TEXT NOT NULL DEFAULT ''
+            )
+        """)
+        # Purge archived responses older than 30 days
+        conn.run("DELETE FROM archived_responses WHERE deleted_at < NOW() - INTERVAL '30 days'")
         return True
     except Exception:
         return False
@@ -143,7 +165,7 @@ def load_responses():
 
 
 def delete_response(response_id):
-    """Delete a response by its database id."""
+    """Soft-delete: move a response to the archive table."""
     try:
         conn = _get_conn()
     except Exception:
@@ -151,7 +173,71 @@ def delete_response(response_id):
     if conn is None:
         return False
     try:
+        conn.run(
+            "INSERT INTO archived_responses (original_id, submitted_at, name, phone, email,"
+            " company, department, position, seminar1_rating, seminar1_comment,"
+            " seminar2_rating, seminar2_comment, request)"
+            " SELECT id, submitted_at, name, phone, email, company, department, position,"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
+            " FROM responses WHERE id = :id",
+            id=response_id,
+        )
         conn.run("DELETE FROM responses WHERE id = :id", id=response_id)
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+
+def load_archived():
+    """Load archived responses. Returns list of dicts with Japanese keys + id/deleted_at."""
+    try:
+        conn = _get_conn()
+    except Exception:
+        return None
+    if conn is None:
+        return None
+    try:
+        # Purge old entries first
+        conn.run("DELETE FROM archived_responses WHERE deleted_at < NOW() - INTERVAL '30 days'")
+        result = conn.run(
+            "SELECT id, deleted_at, submitted_at, name, phone, email, company, department,"
+            " position, seminar1_rating, seminar1_comment, seminar2_rating,"
+            " seminar2_comment, request"
+            " FROM archived_responses ORDER BY deleted_at DESC"
+        )
+        rows = []
+        for r in result:
+            row = {"id": r[0], "deleted_at": r[1].strftime("%Y-%m-%d %H:%M") if r[1] else ""}
+            row.update({_DB_TO_JP[col]: val for col, val in zip(_DB_COLS, r[2:])})
+            rows.append(row)
+        return rows
+    except Exception:
+        return None
+    finally:
+        conn.close()
+
+
+def restore_response(archive_id):
+    """Restore an archived response back to the responses table."""
+    try:
+        conn = _get_conn()
+    except Exception:
+        return False
+    if conn is None:
+        return False
+    try:
+        conn.run(
+            "INSERT INTO responses (submitted_at, name, phone, email, company, department,"
+            " position, seminar1_rating, seminar1_comment, seminar2_rating,"
+            " seminar2_comment, request)"
+            " SELECT submitted_at, name, phone, email, company, department, position,"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
+            " FROM archived_responses WHERE id = :id",
+            id=archive_id,
+        )
+        conn.run("DELETE FROM archived_responses WHERE id = :id", id=archive_id)
         return True
     except Exception:
         return False
