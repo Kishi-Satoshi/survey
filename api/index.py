@@ -88,6 +88,18 @@ def _init_pg():
                 request TEXT NOT NULL DEFAULT ''
             )
         """)
+        # Migrate existing table: add new columns if they don't exist
+        for col in ["department", "seminar1_rating", "seminar1_comment",
+                     "seminar2_rating", "seminar2_comment", "request"]:
+            try:
+                conn.run(f"ALTER TABLE responses ADD COLUMN {col} TEXT NOT NULL DEFAULT ''")
+            except Exception:
+                pass  # column already exists
+        # Drop old comment column if it exists
+        try:
+            conn.run("ALTER TABLE responses DROP COLUMN IF EXISTS comment")
+        except Exception:
+            pass
         return True
     except Exception:
         return False
