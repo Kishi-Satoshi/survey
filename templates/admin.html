@@ -61,7 +61,17 @@
               {% for row in rows %}
               <tr>
                 {% for col in fieldnames %}
-                <td>{{ row[col] }}</td>
+                <td>
+                  {% if col == '不具合クイズ' %}
+                    {% if row[col] == '必要以上にスクロールできるようになっている' %}
+                      <span class="badge bg-success">正解</span>
+                    {% elif row[col] %}
+                      <span class="badge bg-danger">不正解</span>
+                    {% endif %}
+                  {% else %}
+                    {{ row[col] }}
+                  {% endif %}
+                </td>
                 {% endfor %}
                 {% if admin_token %}
                 <td>
@@ -100,7 +110,17 @@
               <tr>
                 <td>{{ row.deleted_at }}</td>
                 {% for col in fieldnames %}
-                <td>{{ row[col] }}</td>
+                <td>
+                  {% if col == '不具合クイズ' %}
+                    {% if row[col] == '必要以上にスクロールできるようになっている' %}
+                      <span class="badge bg-success">正解</span>
+                    {% elif row[col] %}
+                      <span class="badge bg-danger">不正解</span>
+                    {% endif %}
+                  {% else %}
+                    {{ row[col] }}
+                  {% endif %}
+                </td>
                 {% endfor %}
                 <td>
                   <form method="POST" action="/admin/{{ admin_token }}/restore/{{ row.id }}"
