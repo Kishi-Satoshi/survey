@@ -93,11 +93,10 @@
           電話番号（半角）<span class="required-mark">*</span>
         </label>
         <input
-          type="tel"
+          type="text"
           class="form-control {% if errors.phone %}is-invalid{% endif %}"
           id="phone"
           name="phone"
-          inputmode="tel"
           value="{{ values.phone or '' }}"
           placeholder="09012345678"
         >
