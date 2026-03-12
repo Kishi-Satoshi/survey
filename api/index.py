@@ -122,6 +122,13 @@ def _init_pg():
                 request TEXT NOT NULL DEFAULT ''
             )
         """)
+        # Migrate archived_responses: add new columns if they don't exist
+        for col in ["department", "seminar1_rating", "seminar1_comment",
+                     "seminar2_rating", "seminar2_comment", "quiz_answer", "request"]:
+            try:
+                conn.run(f"ALTER TABLE archived_responses ADD COLUMN {col} TEXT NOT NULL DEFAULT ''")
+            except Exception:
+                pass
         # Purge archived responses older than 30 days
         conn.run("DELETE FROM archived_responses WHERE deleted_at < NOW() - INTERVAL '30 days'")
         return True
