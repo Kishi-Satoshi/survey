@@ -139,6 +139,7 @@ def submit():
         "seminar1_comment": request.form.get("seminar1_comment", "").strip(),
         "seminar2_rating": request.form.get("seminar2_rating", "").strip(),
         "seminar2_comment": request.form.get("seminar2_comment", "").strip(),
+        "quiz_answer": request.form.get("quiz_answer", "").strip(),
         "request": request.form.get("request", "").strip(),
         "privacy": request.form.get("privacy", ""),
     }
@@ -165,6 +166,7 @@ def submit():
         "A3-2 感想": values["seminar1_comment"],
         "H4-1 満足度": values["seminar2_rating"],
         "H4-1 感想": values["seminar2_comment"],
+        "不具合クイズ": values["quiz_answer"],
         "テクバンへのご要望": values["request"],
     }
 

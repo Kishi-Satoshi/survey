@@ -26,13 +26,13 @@ app = Flask(__name__, template_folder=TEMPLATE_DIR)
 
 FIELDNAMES = [
     "受付日時", "氏名", "電話番号", "メールアドレス", "会社名", "部署名", "役職",
-    "A3-2 満足度", "A3-2 感想", "H4-1 満足度", "H4-1 感想", "テクバンへのご要望",
+    "A3-2 満足度", "A3-2 感想", "H4-1 満足度", "H4-1 感想", "不具合クイズ", "テクバンへのご要望",
 ]
 REQUIRED_FIELDS = ["name", "phone", "email", "company", "department", "position"]
 
 _DB_COLS = [
     "submitted_at", "name", "phone", "email", "company", "department", "position",
-    "seminar1_rating", "seminar1_comment", "seminar2_rating", "seminar2_comment", "request",
+    "seminar1_rating", "seminar1_comment", "seminar2_rating", "seminar2_comment", "quiz_answer", "request",
 ]
 _JP_TO_DB = dict(zip(FIELDNAMES, _DB_COLS))
 _DB_TO_JP = dict(zip(_DB_COLS, FIELDNAMES))
@@ -85,12 +85,13 @@ def _init_pg():
                 seminar1_comment TEXT NOT NULL DEFAULT '',
                 seminar2_rating TEXT NOT NULL DEFAULT '',
                 seminar2_comment TEXT NOT NULL DEFAULT '',
+                quiz_answer TEXT NOT NULL DEFAULT '',
                 request TEXT NOT NULL DEFAULT ''
             )
         """)
         # Migrate existing table: add new columns if they don't exist
         for col in ["department", "seminar1_rating", "seminar1_comment",
-                     "seminar2_rating", "seminar2_comment", "request"]:
+                     "seminar2_rating", "seminar2_comment", "quiz_answer", "request"]:
             try:
                 conn.run(f"ALTER TABLE responses ADD COLUMN {col} TEXT NOT NULL DEFAULT ''")
             except Exception:
@@ -117,6 +118,7 @@ def _init_pg():
                 seminar1_comment TEXT NOT NULL DEFAULT '',
                 seminar2_rating TEXT NOT NULL DEFAULT '',
                 seminar2_comment TEXT NOT NULL DEFAULT '',
+                quiz_answer TEXT NOT NULL DEFAULT '',
                 request TEXT NOT NULL DEFAULT ''
             )
         """)
@@ -143,9 +145,9 @@ def _pg_save(data: dict):
         row = {_JP_TO_DB[k]: v for k, v in data.items()}
         conn.run(
             "INSERT INTO responses (submitted_at, name, phone, email, company, department, position,"
-            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request)"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, quiz_answer, request)"
             " VALUES (:submitted_at, :name, :phone, :email, :company, :department, :position,"
-            " :seminar1_rating, :seminar1_comment, :seminar2_rating, :seminar2_comment, :request)",
+            " :seminar1_rating, :seminar1_comment, :seminar2_rating, :seminar2_comment, :quiz_answer, :request)",
             **row,
         )
         return True
@@ -165,7 +167,7 @@ def _pg_load():
     try:
         result = conn.run(
             "SELECT id, submitted_at, name, phone, email, company, department, position,"
-            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, quiz_answer, request"
             " FROM responses ORDER BY id"
         )
         rows = []
@@ -192,9 +194,9 @@ def _pg_delete(response_id):
         conn.run(
             "INSERT INTO archived_responses (original_id, submitted_at, name, phone, email,"
             " company, department, position, seminar1_rating, seminar1_comment,"
-            " seminar2_rating, seminar2_comment, request)"
+            " seminar2_rating, seminar2_comment, quiz_answer, request)"
             " SELECT id, submitted_at, name, phone, email, company, department, position,"
-            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, quiz_answer, request"
             " FROM responses WHERE id = :id",
             id=response_id,
         )
@@ -218,7 +220,7 @@ def _pg_load_archived():
         result = conn.run(
             "SELECT id, deleted_at, submitted_at, name, phone, email, company, department,"
             " position, seminar1_rating, seminar1_comment, seminar2_rating,"
-            " seminar2_comment, request"
+            " seminar2_comment, quiz_answer, request"
             " FROM archived_responses ORDER BY deleted_at DESC"
         )
         rows = []
@@ -244,9 +246,9 @@ def _pg_restore(archive_id):
         conn.run(
             "INSERT INTO responses (submitted_at, name, phone, email, company, department,"
             " position, seminar1_rating, seminar1_comment, seminar2_rating,"
-            " seminar2_comment, request)"
+            " seminar2_comment, quiz_answer, request)"
             " SELECT submitted_at, name, phone, email, company, department, position,"
-            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, request"
+            " seminar1_rating, seminar1_comment, seminar2_rating, seminar2_comment, quiz_answer, request"
             " FROM archived_responses WHERE id = :id",
             id=archive_id,
         )
@@ -387,6 +389,7 @@ def submit():
         "seminar1_comment": request.form.get("seminar1_comment", "").strip(),
         "seminar2_rating": request.form.get("seminar2_rating", "").strip(),
         "seminar2_comment": request.form.get("seminar2_comment", "").strip(),
+        "quiz_answer": request.form.get("quiz_answer", "").strip(),
         "request": request.form.get("request", "").strip(),
         "privacy": request.form.get("privacy", ""),
     }
@@ -413,6 +416,7 @@ def submit():
         "A3-2 感想": values["seminar1_comment"],
         "H4-1 満足度": values["seminar2_rating"],
         "H4-1 感想": values["seminar2_comment"],
+        "不具合クイズ": values["quiz_answer"],
         "テクバンへのご要望": values["request"],
     }
 

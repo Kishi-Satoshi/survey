@@ -27,6 +27,9 @@
       font-weight: 600;
       margin-bottom: 0.75rem;
       line-height: 1.5;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
     }
     .star-rating {
       display: flex;
@@ -258,6 +261,32 @@
             rows="3"
             placeholder="ご自由にご記入ください。"
           >{{ values.seminar2_comment or '' }}</textarea>
+        </div>
+      </div>
+
+      <!-- 不具合クイズ -->
+      <div class="seminar-section" style="background: #fff8e1;">
+        <div class="fw-semibold mb-2" style="font-size: 0.95rem;">
+          このアンケートフォームには不具合があります。どれが不具合でしょうか？<br>
+          <span class="text-muted" style="font-size: 0.85rem;">正解者の中から抽選でオリジナルハイチュウをプレゼント！</span>
+        </div>
+        <div class="mb-0">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz1" value="セミナータイトルが途中で切れて表示されている" {% if values.quiz_answer == 'セミナータイトルが途中で切れて表示されている' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz1">セミナータイトルが途中で切れて表示されている</label>
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz2" value="満足度の星が右から左の順で並んでいる" {% if values.quiz_answer == '満足度の星が右から左の順で並んでいる' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz2">満足度の星が右から左の順で並んでいる</label>
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz3" value="電話番号欄で数字以外の文字も入力できる" {% if values.quiz_answer == '電話番号欄で数字以外の文字も入力できる' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz3">電話番号欄で数字以外の文字も入力できる</label>
+          </div>
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz4" value="メールアドレス欄のプレースホルダーに電話番号が表示されている" {% if values.quiz_answer == 'メールアドレス欄のプレースホルダーに電話番号が表示されている' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz4">メールアドレス欄のプレースホルダーに電話番号が表示されている</label>
+          </div>
         </div>
       </div>
 
