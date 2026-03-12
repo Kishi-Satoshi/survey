@@ -63,7 +63,7 @@
                 {% for col in fieldnames %}
                 <td>
                   {% if col == '不具合クイズ' %}
-                    {% if row[col] == '電話番号欄の入力が全角に変換される' %}
+                    {% if row[col] == 'メールアドレス欄のラベルをタップすると別の入力欄にフォーカスが当たる' %}
                       <span class="badge bg-success">正解</span>
                     {% elif row[col] %}
                       <span class="badge bg-danger">不正解</span>
@@ -114,7 +114,7 @@
                 {% for col in fieldnames %}
                 <td>
                   {% if col == '不具合クイズ' %}
-                    {% if row[col] == '電話番号欄の入力が全角に変換される' %}
+                    {% if row[col] == 'メールアドレス欄のラベルをタップすると別の入力欄にフォーカスが当たる' %}
                       <span class="badge bg-success">正解</span>
                     {% elif row[col] %}
                       <span class="badge bg-danger">不正解</span>
