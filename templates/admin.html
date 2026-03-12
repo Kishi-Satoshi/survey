@@ -63,7 +63,7 @@
                 {% for col in fieldnames %}
                 <td>
                   {% if col == '不具合クイズ' %}
-                    {% if row[col] == '入力欄のプレースホルダーの文字が見切れている' %}
+                    {% if row[col] == '入力欄のプレースホルダーの表示位置がずれている' %}
                       <span class="badge bg-success">正解</span>
                     {% elif row[col] %}
                       <span class="badge bg-danger">不正解</span>
@@ -114,7 +114,7 @@
                 {% for col in fieldnames %}
                 <td>
                   {% if col == '不具合クイズ' %}
-                    {% if row[col] == '入力欄のプレースホルダーの文字が見切れている' %}
+                    {% if row[col] == '入力欄のプレースホルダーの表示位置がずれている' %}
                       <span class="badge bg-success">正解</span>
                     {% elif row[col] %}
                       <span class="badge bg-danger">不正解</span>
