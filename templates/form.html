@@ -14,7 +14,6 @@
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,.1);
       padding: 2rem;
-      min-height: 100vh;
     }
     .required-mark { color: #dc3545; margin-left: 2px; }
     .seminar-section {
@@ -117,7 +116,7 @@
           id="email"
           name="email"
           value="{{ values.email or '' }}"
-          placeholder="example@company.com"
+          placeholder="09012345678"
         >
         {% if errors.email %}
         <div class="invalid-feedback">{{ errors.email }}</div>
@@ -278,12 +277,12 @@
             <label class="form-check-label" for="quiz2">電話番号欄で数字以外の文字も入力できる</label>
           </div>
           <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz3" value="必要以上にスクロールできるようになっている" {% if values.quiz_answer == '必要以上にスクロールできるようになっている' %}checked{% endif %}>
-            <label class="form-check-label" for="quiz3">必要以上にスクロールできるようになっている</label>
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz3" value="メールアドレス欄のプレースホルダーに電話番号が表示されている" {% if values.quiz_answer == 'メールアドレス欄のプレースホルダーに電話番号が表示されている' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz3">メールアドレス欄のプレースホルダーに電話番号が表示されている</label>
           </div>
           <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz4" value="メールアドレス欄のプレースホルダーに電話番号が表示されている" {% if values.quiz_answer == 'メールアドレス欄のプレースホルダーに電話番号が表示されている' %}checked{% endif %}>
-            <label class="form-check-label" for="quiz4">メールアドレス欄のプレースホルダーに電話番号が表示されている</label>
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz4" value="必要以上にスクロールできるようになっている" {% if values.quiz_answer == '必要以上にスクロールできるようになっている' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz4">必要以上にスクロールできるようになっている</label>
           </div>
         </div>
       </div>
