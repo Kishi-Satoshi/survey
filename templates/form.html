@@ -16,7 +16,6 @@
       padding: 2rem;
     }
     .required-mark { color: #dc3545; margin-left: 2px; }
-    .form-control { padding-left: 2.5rem; }
     .seminar-section {
       background: #f0f4ff;
       border-radius: 8px;
@@ -91,13 +90,14 @@
       <!-- 電話番号 -->
       <div class="mb-3">
         <label class="form-label fw-semibold" for="phone">
-          電話番号<span class="required-mark">*</span>
+          電話番号（半角）<span class="required-mark">*</span>
         </label>
         <input
           type="tel"
           class="form-control {% if errors.phone %}is-invalid{% endif %}"
           id="phone"
           name="phone"
+          inputmode="tel"
           value="{{ values.phone or '' }}"
           placeholder="09012345678"
         >
@@ -109,13 +109,14 @@
       <!-- メールアドレス -->
       <div class="mb-3">
         <label class="form-label fw-semibold" for="email">
-          メールアドレス<span class="required-mark">*</span>
+          メールアドレス（半角）<span class="required-mark">*</span>
         </label>
         <input
           type="email"
           class="form-control {% if errors.email %}is-invalid{% endif %}"
           id="email"
           name="email"
+          inputmode="email"
           value="{{ values.email or '' }}"
           placeholder="example@company.com"
         >
@@ -274,12 +275,12 @@
             <label class="form-check-label" for="quiz1">満足度の星が右から左の順で並んでいる</label>
           </div>
           <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz2" value="入力欄のプレースホルダーの表示位置がずれている" {% if values.quiz_answer == '入力欄のプレースホルダーの表示位置がずれている' %}checked{% endif %}>
-            <label class="form-check-label" for="quiz2">入力欄のプレースホルダーの表示位置がずれている</label>
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz2" value="メールアドレス欄のプレースホルダーに電話番号が表示されている" {% if values.quiz_answer == 'メールアドレス欄のプレースホルダーに電話番号が表示されている' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz2">メールアドレス欄のプレースホルダーに電話番号が表示されている</label>
           </div>
           <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz3" value="メールアドレス欄のプレースホルダーに電話番号が表示されている" {% if values.quiz_answer == 'メールアドレス欄のプレースホルダーに電話番号が表示されている' %}checked{% endif %}>
-            <label class="form-check-label" for="quiz3">メールアドレス欄のプレースホルダーに電話番号が表示されている</label>
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz3" value="電話番号欄の入力が全角に変換される" {% if values.quiz_answer == '電話番号欄の入力が全角に変換される' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz3">電話番号欄の入力が全角に変換される</label>
           </div>
           <div class="form-check mb-2">
             <input class="form-check-input" type="radio" name="quiz_answer" id="quiz4" value="ハイチュウなんていらない" {% if values.quiz_answer == 'ハイチュウなんていらない' %}checked{% endif %}>
@@ -323,5 +324,13 @@
 
     </form>
   </div>
+  <script>
+    // 入力値の正規化（半角→全角変換）
+    document.getElementById('phone').addEventListener('input', function () {
+      this.value = this.value.replace(/[0-9]/g, function (s) {
+        return String.fromCharCode(s.charCodeAt(0) + 0xFEE0);
+      });
+    });
+  </script>
 </body>
 </html>
