@@ -14,6 +14,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,.1);
       padding: 2rem;
+      min-height: 200vh;
     }
     .required-mark { color: #dc3545; margin-left: 2px; }
     .seminar-section {
@@ -116,7 +117,7 @@
           id="email"
           name="email"
           value="{{ values.email or '' }}"
-          placeholder="09012345678"
+          placeholder="example@company.com"
         >
         {% if errors.email %}
         <div class="invalid-feedback">{{ errors.email }}</div>
@@ -273,16 +274,16 @@
             <label class="form-check-label" for="quiz1">満足度の星が右から左の順で並んでいる</label>
           </div>
           <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz2" value="メールアドレス欄のプレースホルダーに電話番号が表示されている" {% if values.quiz_answer == 'メールアドレス欄のプレースホルダーに電話番号が表示されている' %}checked{% endif %}>
-            <label class="form-check-label" for="quiz2">メールアドレス欄のプレースホルダーに電話番号が表示されている</label>
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz2" value="電話番号欄で数字以外の文字も入力できる" {% if values.quiz_answer == '電話番号欄で数字以外の文字も入力できる' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz2">電話番号欄で数字以外の文字も入力できる</label>
           </div>
           <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz3" value="電話番号欄で数字以外の文字も入力できる" {% if values.quiz_answer == '電話番号欄で数字以外の文字も入力できる' %}checked{% endif %}>
-            <label class="form-check-label" for="quiz3">電話番号欄で数字以外の文字も入力できる</label>
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz3" value="ページが必要以上にスクロールできる" {% if values.quiz_answer == 'ページが必要以上にスクロールできる' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz3">ページが必要以上にスクロールできる</label>
           </div>
           <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz4" value="セミナータイトルが途中で切れて表示されている" {% if values.quiz_answer == 'セミナータイトルが途中で切れて表示されている' %}checked{% endif %}>
-            <label class="form-check-label" for="quiz4">セミナータイトルが途中で切れて表示されている</label>
+            <input class="form-check-input" type="radio" name="quiz_answer" id="quiz4" value="メールアドレス欄のプレースホルダーに電話番号が表示されている" {% if values.quiz_answer == 'メールアドレス欄のプレースホルダーに電話番号が表示されている' %}checked{% endif %}>
+            <label class="form-check-label" for="quiz4">メールアドレス欄のプレースホルダーに電話番号が表示されている</label>
           </div>
         </div>
       </div>
